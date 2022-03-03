@@ -8,11 +8,9 @@ WORKDIR /usr/selfapi
 COPY go.mod ./
 RUN go mod download && go mod verify
 
-ENV AWS_ACCESS_KEY_ID=hironori1
-ENV AWS_SECRET_ACCESS_KEY=hironori1
+ENV AWS_ACCESS_KEY_ID=AKIA3OBNHHXY3UDDCG5Y
+ENV AWS_SECRET_ACCESS_KEY=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
 ENV REGION=ap-northeast-1
-
-EXPOSE 8080
 
 COPY . .
 

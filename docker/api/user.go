@@ -2,12 +2,11 @@ package main
 
 import (
 	"crypto/rand"
-	"errors"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
-	"github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin"
 
 	"fmt"
 )
@@ -15,25 +14,14 @@ import (
 func main() {
     r := gin.Default()
     r.POST("/user/create", create)
+    r.GET("/user/info", info)
     r.Run()
 }
 
 
 func create(c *gin.Context) {
-    // emailIDPtr := flag.String("e", "", "The email address of the user")
-    // userPoolIDPtr := flag.String("p", "", "The ID of the user pool")
-    // userNamePtr := flag.String("n", "", "The name of the user")
-
-    // flag.Parse()
-
-    // fmt.Println("1")
-    // if *emailIDPtr == "" || *userPoolIDPtr == "" || *userNamePtr == "" {
-    //     fmt.Println("2")
-    //     fmt.Println("You must supply an email address, user pool ID, and user name")
-    //     fmt.Println("Usage: go run CreateUser.go -e EMAIL-ADDRESS -p USER-POOL-ID -n USER-NAME")
-    //     os.Exit(1)
-    // }
-    random, _ := MakeRandomStr(10)
+    email := MakeRandomStr(10) + "@example.com"
+    pass := MakeRandomStr(10) + "&1"
     sess := session.Must(session.NewSessionWithOptions(session.Options{
         Config: aws.Config{
             Region: aws.String("ap-northeast-1"),
@@ -43,7 +31,6 @@ func create(c *gin.Context) {
 
     cognitoClient := cognitoidentityprovider.New(sess)
 
-    cognitoClient.Client.Endpoint = "http://192.168.1.8:9229"
     newUserData := &cognitoidentityprovider.AdminCreateUserInput{
         DesiredDeliveryMediums: []*string{
             aws.String("EMAIL"),
@@ -51,36 +38,56 @@ func create(c *gin.Context) {
         UserAttributes: []*cognitoidentityprovider.AttributeType{
             {
                 Name:  aws.String("email"),
-                Value: aws.String(random),
+                Value: aws.String(email),
+            },
+            {
+                Name:  aws.String("custom:supporter"),
+                Value: aws.String("false"),
             },
         },
     }
 		
-    newUserData.SetUserPoolId("local_5HgXw3xJ")
-    newUserData.SetUsername(random)
+    newUserData.SetUserPoolId("ap-northeast-1_Kjb4vUZPh")
+    newUserData.SetUsername(email)
+    newUserData.SetTemporaryPassword(pass)
 
     fmt.Println(newUserData)
     _, err := cognitoClient.AdminCreateUser(newUserData)
-    fmt.Println(cognitoClient)
+    fmt.Println(cognitoClient.Endpoint)
     if err != nil {
         fmt.Println("Got error creating user:", err)
     }
 
+    nawPass := MakeRandomStr(10) + "&&"
+    userName := newUserData.Username
+
+    newPassword := &cognitoidentityprovider.AdminSetUserPasswordInput{
+        Password: aws.String(nawPass),
+        Permanent: aws.Bool(true),
+        UserPoolId: aws.String("ap-northeast-1_Kjb4vUZPh"),
+        Username: aws.String(*userName),
+    }
+
+    _, e := cognitoClient.AdminSetUserPassword(newPassword)
+    if e != nil {
+        fmt.Println("Got error creating new password:", e)
+    }
+
     c.JSON(200, gin.H{
-        "user": "name",
-        "pass": "pass",
+        "user": email,
+        "pass": nawPass,
     })
 
     return
 }
 
-func MakeRandomStr(digit uint32) (string, error) {
+func MakeRandomStr(digit uint32) (string) {
     const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
     // 乱数を生成
     b := make([]byte, digit)
     if _, err := rand.Read(b); err != nil {
-        return "", errors.New("unexpected error...")
+        return ""
     }
 
     // letters からランダムに取り出して文字列を生成
@@ -89,5 +96,18 @@ func MakeRandomStr(digit uint32) (string, error) {
         // index が letters の長さに収まるように調整
         result += string(letters[int(v)%len(letters)])
     }
-    return result, nil
+    return result
+}
+
+func info(c *gin.Context) {
+
+    c.JSON(200, gin.H{
+        "username": "testuser",
+        "nickName": "testuser",
+        "kana": "テスト ユーザ",
+        "company": "test inc",
+        "department": "develop",
+      })
+
+    return
 }
