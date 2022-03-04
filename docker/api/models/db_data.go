@@ -1,16 +1,11 @@
 package models
 
-import "time"
-
-type dbData struct {
-	ID uint
-	username map[string]string
-	secret map[string]string
-	orgid map[string]int
-	nickname map[string]string
-	kana map[string]string
-	company map[string]string
-	department map[string]string
-	CreatedAt time.Time
-  UpdatedAt time.Time
+type DbData struct {
+	Username string `dynamodbav:"username"`
+	Secret string `dynamodbav:"secret"`
+	Orgid int `dynamodbav:"orgid"`
+	Nickname string `dynamodbav:"nickname"`
+	Kana string `dynamodbav:"kana"`
+	Company string `dynamodbav:"company"`
+	Department string `dynamodbav:"department"`
 }
