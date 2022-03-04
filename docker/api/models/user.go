@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type user struct {
+type User struct {
 	ID uint
 	username string
 	secret string
