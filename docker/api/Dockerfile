@@ -2,7 +2,7 @@ FROM golang:1.16.14
 
 RUN  go get -u github.com/gin-gonic/gin
 
-WORKDIR /usr/selfapi
+WORKDIR /usr/api
 
 # pre-copy/cache go.mod for pre-downloading dependencies and only redownloading them in subsequent builds if they change
 COPY go.mod ./
