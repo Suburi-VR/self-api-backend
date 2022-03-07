@@ -2,19 +2,23 @@ package main
 
 import (
 	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
 	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gin-gonic/gin"
 
+	"api/config"
 	"api/models"
 	"fmt"
 )
+
 
 func main() {
     r := gin.Default()
@@ -25,16 +29,9 @@ func main() {
 }
 
 func create(c *gin.Context) {
+
     email := MakeRandomStr(10) + "@example.com"
     pass := MakeRandomStr(10) + "&1"
-    sess := session.Must(session.NewSessionWithOptions(session.Options{
-        Config: aws.Config{
-            Region: aws.String("ap-northeast-1"),
-            CredentialsChainVerboseErrors: aws.Bool(true),
-        },
-    }))
-
-    cognitoClient := cognitoidentityprovider.New(sess)
 
     newUserData := &cognitoidentityprovider.AdminCreateUserInput{
         UserAttributes: []*cognitoidentityprovider.AttributeType{
@@ -49,9 +46,8 @@ func create(c *gin.Context) {
     newUserData.SetUsername(email)
     newUserData.SetTemporaryPassword(pass)
 
-    fmt.Println(newUserData)
-    _, err := cognitoClient.AdminCreateUser(newUserData)
-    fmt.Println(cognitoClient.Endpoint)
+    _, err := config.CognitoClient.AdminCreateUser(newUserData)
+    fmt.Println(config.CognitoClient.Endpoint)
     if err != nil {
         fmt.Println("Got error creating user:", err)
     }
@@ -66,7 +62,7 @@ func create(c *gin.Context) {
         Username: aws.String(*userName),
     }
 
-    _, e := cognitoClient.AdminSetUserPassword(newPassword)
+    _, e := config.CognitoClient.AdminSetUserPassword(newPassword)
     if e != nil {
         fmt.Println("Got error creating new password:", e)
     }
@@ -86,8 +82,6 @@ func create(c *gin.Context) {
         Department: "busho",
     }
 
-    db := dynamodb.New(sess, &aws.Config{Endpoint: aws.String("http://192.168.1.8:8000")})
-    tableName := "UserTable"
         
     av, dbErr := dynamodbattribute.MarshalMap(dbData)
     if dbErr != nil {
@@ -96,10 +90,10 @@ func create(c *gin.Context) {
 
     input := &dynamodb.PutItemInput{
         Item:      av,
-        TableName: aws.String(tableName),
+        TableName: aws.String(config.TableName),
     }
     
-    _, err = db.PutItem(input)
+    _, err = config.Db.PutItem(input)
     if err != nil {
         log.Fatalf("Got error calling PutItem: %s", err)
     }
@@ -127,13 +121,44 @@ func MakeRandomStr(digit uint32) (string) {
 
 func getInfo(c *gin.Context) {
 
+    // idToken取得
+    idToken := c.Request.Header.Get("Authorization")
+    sprited := strings.Split(idToken, ".")
+
+    //　ユーザー情報を取り出す([]byte)
+    userInfo, err := base64.RawStdEncoding.DecodeString(sprited[1])
+    if err != nil {
+        log.Fatalf("Got error calling PutItem: %s", err)
+    }
+
+    var mapData map[string]string
+    json.Unmarshal(userInfo, &mapData)
+    username := mapData["cognito:username"]
+
+    input := &dynamodb.GetItemInput{
+        TableName: aws.String(config.TableName),
+        Key: map[string]*dynamodb.AttributeValue{
+            "username": {
+                S: &username,
+            },
+        },
+    }
+
+    result, err := config.Db.GetItem(input)
+    if err != nil {
+        fmt.Println("[GetItem Error]", err)
+        return
+    }
+
+    user := result.Item
+
     c.JSON(200, gin.H{
-        "username": "testuser",
-        "orgid": 1,
-        "nickName": "testuser",
-        "kana": "テスト ユーザ",
-        "company": "test inc",
-        "department": "develop",
+        "username": user["username"].S,
+        "orgid": user["orgid"].N,
+        "nickName": user["nickname"].S,
+        "kana": user["kana"].S,
+        "company": user["company"].S,
+        "department": user["department"].S,
       })
 
     return
