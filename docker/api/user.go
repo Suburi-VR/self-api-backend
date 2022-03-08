@@ -119,8 +119,7 @@ func MakeRandomStr(digit uint32) (string) {
     return result
 }
 
-func getInfo(c *gin.Context) {
-
+func userName(c *gin.Context) string {
     // idToken取得
     idToken := c.Request.Header.Get("Authorization")
     sprited := strings.Split(idToken, ".")
@@ -134,6 +133,13 @@ func getInfo(c *gin.Context) {
     var mapData map[string]string
     json.Unmarshal(userInfo, &mapData)
     username := mapData["cognito:username"]
+
+    return username
+}
+
+func getInfo(c *gin.Context) {
+
+    username := userName(c)
 
     input := &dynamodb.GetItemInput{
         TableName: aws.String(config.TableName),
@@ -152,6 +158,10 @@ func getInfo(c *gin.Context) {
 
     user := result.Item
 
+    fmt.Println("---------user------")
+    fmt.Println(user)
+    fmt.Println("---------user------")
+
     c.JSON(200, gin.H{
         "username": user["username"].S,
         "orgid": user["orgid"].N,
@@ -165,6 +175,53 @@ func getInfo(c *gin.Context) {
 }
 
 func updateInfo(c *gin.Context) {
+
+    var body map[string]string
+    c.BindJSON(&body)
+
+    username := userName(c)
+
+    params := &dynamodb.UpdateItemInput {
+        TableName: aws.String(config.TableName),
+        Key: map[string]*dynamodb.AttributeValue{
+            "username": {
+                S: &username,
+            },
+        },
+        UpdateExpression: aws.String("set #platform = :platform, #deviceToken = :deviceToken, #nickname = :nickname, #company = :company, #department = :department"),
+        ExpressionAttributeNames: map[string]*string {
+            "#platform": aws.String("platform"),
+            "#deviceToken": aws.String("deviceToken"),
+            "#nickname": aws.String("nickname"),
+            "#company": aws.String("company"),
+            "#department": aws.String("department"),
+        },
+        ExpressionAttributeValues: map[string]*dynamodb.AttributeValue {
+            ":platform": {
+                S: aws.String(body["platform"]),
+            },
+            ":deviceToken": {
+                S: aws.String(body["deviceToken"]),
+            },
+            ":nickname": {
+                S: aws.String(body["nickname"]),
+            },
+            ":company": {
+                S: aws.String(body["company"]),
+            },
+            ":department": {
+                S: aws.String(body["department"]),
+            },
+        },
+        ReturnValues: aws.String("ALL_NEW"),
+        ReturnConsumedCapacity: aws.String("TOTAL"),
+        ReturnItemCollectionMetrics: aws.String("SIZE"),
+    }
+
+    _, err := config.Db.UpdateItem(params)
+    if err != nil {
+        log.Fatalf("Got error calling UpdateItem: %s", err)
+    }
 
     return
 }
