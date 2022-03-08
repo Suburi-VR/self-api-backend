@@ -16,7 +16,6 @@ import (
 
 	"api/config"
 	"api/models"
-	"fmt"
 )
 
 
@@ -47,9 +46,8 @@ func create(c *gin.Context) {
     newUserData.SetTemporaryPassword(pass)
 
     _, err := config.CognitoClient.AdminCreateUser(newUserData)
-    fmt.Println(config.CognitoClient.Endpoint)
     if err != nil {
-        fmt.Println("Got error creating user:", err)
+        log.Fatalf("Got error creating user: %s", err)
     }
 
     nawPass := MakeRandomStr(10) + "&&1"
@@ -64,7 +62,7 @@ func create(c *gin.Context) {
 
     _, e := config.CognitoClient.AdminSetUserPassword(newPassword)
     if e != nil {
-        fmt.Println("Got error creating new password:", e)
+        log.Fatalf("Got error create new password: %s", e)
     }
 
     c.JSON(200, gin.H{
@@ -152,15 +150,11 @@ func getInfo(c *gin.Context) {
 
     result, err := config.Db.GetItem(input)
     if err != nil {
-        fmt.Println("[GetItem Error]", err)
+        log.Fatalf("Got error calling GetItem: %s", err)
         return
     }
 
     user := result.Item
-
-    fmt.Println("---------user------")
-    fmt.Println(user)
-    fmt.Println("---------user------")
 
     c.JSON(200, gin.H{
         "username": user["username"].S,
