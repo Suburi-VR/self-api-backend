@@ -14,4 +14,4 @@ ENV REGION=ap-northeast-1
 
 COPY . .
 
-CMD ["go", "run", "user.go"]
+CMD ["go", "run", "main.go", "user.go", "call.go"]

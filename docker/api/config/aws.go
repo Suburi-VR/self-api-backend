@@ -7,7 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-var TableName = "UserTable"
+var UserTable = "UserTable"
+var CallTable = "CallTable"
 var Sess = session.Must(session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{
 			Region: aws.String("ap-northeast-1"),

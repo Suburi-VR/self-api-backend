@@ -1,10 +1,10 @@
 package main
 
 import (
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,21 +16,15 @@ import (
 
 	"api/config"
 	"api/models"
+	"api/utils"
 )
 
-
-func main() {
-    r := gin.Default()
-    r.POST("/user/create", create)
-    r.GET("/user/info", getInfo)
-    r.POST("/user/info", updateInfo)
-    r.Run()
-}
+var User models.User
 
 func create(c *gin.Context) {
 
-    email := MakeRandomStr(10) + "@example.com"
-    pass := MakeRandomStr(10) + "&1"
+    email := utils.MakeRandomStr(10) + "@example.com"
+    pass := utils.MakeRandomStr(10) + "&1"
 
     newUserData := &cognitoidentityprovider.AdminCreateUserInput{
         UserAttributes: []*cognitoidentityprovider.AttributeType{
@@ -50,7 +44,7 @@ func create(c *gin.Context) {
         log.Fatalf("Got error creating user: %s", err)
     }
 
-    nawPass := MakeRandomStr(10) + "&&1"
+    nawPass := utils.MakeRandomStr(10) + "&&1"
     userName := newUserData.Username
 
     newPassword := &cognitoidentityprovider.AdminSetUserPasswordInput{
@@ -70,7 +64,7 @@ func create(c *gin.Context) {
         "pass": nawPass,
     })
 
-    dbData := models.DbData{
+    User = models.User{
         Username: *userName,
         Secret: "?",
         Orgid: 0,
@@ -81,14 +75,14 @@ func create(c *gin.Context) {
     }
 
         
-    av, dbErr := dynamodbattribute.MarshalMap(dbData)
+    av, dbErr := dynamodbattribute.MarshalMap(User)
     if dbErr != nil {
         log.Fatalf("Got error marshalling map: %s", dbErr)
     }
 
     input := &dynamodb.PutItemInput{
         Item:      av,
-        TableName: aws.String(config.TableName),
+        TableName: aws.String(config.UserTable),
     }
     
     _, err = config.Db.PutItem(input)
@@ -99,24 +93,6 @@ func create(c *gin.Context) {
     return
 }
 
-func MakeRandomStr(digit uint32) (string) {
-    const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-    // 乱数を生成
-    b := make([]byte, digit)
-    if _, err := rand.Read(b); err != nil {
-        return ""
-    }
-
-    // letters からランダムに取り出して文字列を生成
-    var result string
-    for _, v := range b {
-        // index が letters の長さに収まるように調整
-        result += string(letters[int(v)%len(letters)])
-    }
-    return result
-}
-
 func userName(c *gin.Context) string {
     // idToken取得
     idToken := c.Request.Header.Get("Authorization")
@@ -124,6 +100,7 @@ func userName(c *gin.Context) string {
 
     //　ユーザー情報を取り出す([]byte)
     userInfo, err := base64.RawStdEncoding.DecodeString(sprited[1])
+
     if err != nil {
         log.Fatalf("Got error calling PutItem: %s", err)
     }
@@ -140,7 +117,7 @@ func getInfo(c *gin.Context) {
     username := userName(c)
 
     input := &dynamodb.GetItemInput{
-        TableName: aws.String(config.TableName),
+        TableName: aws.String(config.UserTable),
         Key: map[string]*dynamodb.AttributeValue{
             "username": {
                 S: &username,
@@ -156,15 +133,21 @@ func getInfo(c *gin.Context) {
 
     user := result.Item
 
-    c.JSON(200, gin.H{
-        "username": user["username"].S,
-        "orgid": user["orgid"].N,
-        "nickName": user["nickname"].S,
-        "kana": user["kana"].S,
-        "company": user["company"].S,
-        "department": user["department"].S,
-      })
+    User.Username = *user["username"].S
+    User.Orgid, err = strconv.Atoi(*user["orgid"].N)
+    User.Nickname = *user["nickname"].S
+    User.Kana = *user["kana"].S
+    User.Company = *user["company"].S
+    User.Department = *user["department"].S
 
+    c.JSON(200, gin.H{
+        "username": User.Username,
+        "orgid": User.Orgid,
+        "nickName": User.Nickname,
+        "kana": User.Kana,
+        "company": User.Company,
+        "department": User.Department,
+      })
     return
 }
 
@@ -173,10 +156,16 @@ func updateInfo(c *gin.Context) {
     var body map[string]string
     c.BindJSON(&body)
 
-    username := userName(c)
+    User.Platform = body["platform"]
+    User.DeviceToken = body["deviceToken"]
+    User.Nickname = body["nickname"]
+    User.Company = body["company"]
+    User.Department = body["department"]
+
+    username := User.Username
 
     params := &dynamodb.UpdateItemInput {
-        TableName: aws.String(config.TableName),
+        TableName: aws.String(config.UserTable),
         Key: map[string]*dynamodb.AttributeValue{
             "username": {
                 S: &username,
@@ -192,19 +181,19 @@ func updateInfo(c *gin.Context) {
         },
         ExpressionAttributeValues: map[string]*dynamodb.AttributeValue {
             ":platform": {
-                S: aws.String(body["platform"]),
+                S: aws.String(User.Platform),
             },
             ":deviceToken": {
-                S: aws.String(body["deviceToken"]),
+                S: aws.String(User.DeviceToken),
             },
             ":nickname": {
-                S: aws.String(body["nickname"]),
+                S: aws.String(User.Nickname),
             },
             ":company": {
-                S: aws.String(body["company"]),
+                S: aws.String(User.Company),
             },
             ":department": {
-                S: aws.String(body["department"]),
+                S: aws.String(User.Department),
             },
         },
         ReturnValues: aws.String("ALL_NEW"),
