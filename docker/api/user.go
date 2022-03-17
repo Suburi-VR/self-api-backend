@@ -75,6 +75,7 @@ func create(c *gin.Context) {
     }
 
         
+
     av, dbErr := dynamodbattribute.MarshalMap(User)
     if dbErr != nil {
         log.Fatalf("Got error marshalling map: %s", dbErr)
@@ -116,6 +117,7 @@ func getInfo(c *gin.Context) {
 
     username := userName(c)
 
+
     input := &dynamodb.GetItemInput{
         TableName: aws.String(config.UserTable),
         Key: map[string]*dynamodb.AttributeValue{
@@ -131,10 +133,11 @@ func getInfo(c *gin.Context) {
         return
     }
 
+    
     user := result.Item
 
     User.Username = *user["username"].S
-    User.Orgid, err = strconv.Atoi(*user["orgid"].N)
+    User.Orgid, _ = strconv.Atoi(*user["orgid"].N)
     User.Nickname = *user["nickname"].S
     User.Kana = *user["kana"].S
     User.Company = *user["company"].S
@@ -143,7 +146,7 @@ func getInfo(c *gin.Context) {
     c.JSON(200, gin.H{
         "username": User.Username,
         "orgid": User.Orgid,
-        "nickName": User.Nickname,
+        "nickname": User.Nickname,
         "kana": User.Kana,
         "company": User.Company,
         "department": User.Department,

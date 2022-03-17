@@ -1,11 +1,12 @@
 package models
 
+// Call 通話情報
 type Call struct {
 	CallID string `dynamodbav:"callid"`
 	Password string `dynamodbav:"password"`
-	Status int `dynamodbav:"status"`
 	Supporter string `dynamodbav:"supporter"`
 	Customer string `dynamodbav:"customer"`
+	Status int `dynamodbav:"status"`
 }
 
 type AnswerResponse struct {

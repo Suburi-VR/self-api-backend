@@ -1,5 +1,6 @@
 package models
 
+// User 現在ログイン中の法人または匿名アカウントユーザー
 type User struct {
 	Username string `dynamodbav:"username"`
 	Secret string `dynamodbav:"secret"`
