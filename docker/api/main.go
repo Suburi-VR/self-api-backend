@@ -8,8 +8,9 @@ import (
 func main() {
 	r := gin.Default()
 	r.POST("/user/create", create)
-	r.GET("/user/info", getInfo)
 	r.POST("/user/info", updateInfo)
+	r.GET("/user/info", getInfo)
+	r.GET("/user/contact", contact)
 	r.POST("/call/start", start)
 	r.POST("/call/answer", answer)
 	r.POST("/call/get", get)

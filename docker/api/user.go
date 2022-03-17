@@ -211,3 +211,60 @@ func updateInfo(c *gin.Context) {
 
     return
 }
+
+func contact(c *gin.Context) {
+    username := userName(c)
+
+    input := &dynamodb.GetItemInput{
+        TableName: aws.String(config.UserTable),
+        Key: map[string]*dynamodb.AttributeValue{
+            "username": {
+                S: &username,
+            },
+        },
+    }
+
+    result, err := config.Db.GetItem(input)
+    if err != nil {
+        log.Fatalf("Got error calling GetItem in contact: %s", err)
+        return
+    }
+
+    user := result.Item
+    orgid := user["orgid"]
+
+    queryInput := &dynamodb.QueryInput{
+		TableName: aws.String(config.UserTable),
+		IndexName: aws.String("OrgIdIndex"),
+		KeyConditionExpression: aws.String("#orgid = :orgid"),
+		ExpressionAttributeNames: map[string]*string{
+			"#orgid": aws.String("orgid"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":orgid": {
+				N: aws.String(*orgid.N),
+			},
+		},
+	}
+
+	items, err := config.Db.Query(queryInput)
+	if err != nil {
+		log.Fatalf("Got error calling Query in contact: %s", err)
+	}
+
+    contactsItems := items.Items
+
+    var contacts []models.Contact
+    for _, v := range contactsItems {
+        var contact models.Contact
+        contact.Username = *v["username"].S
+        contact.Nickname = *v["nickname"].S
+        contact.Company = *v["company"].S
+        contact.Department = *v["department"].S
+        contacts = append(contacts, contact)
+    }
+    
+    c.JSON(200, gin.H{
+		"contact": contacts,
+	})
+}
