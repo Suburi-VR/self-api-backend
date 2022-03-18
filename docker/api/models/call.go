@@ -10,8 +10,8 @@ type Call struct {
 }
 
 type AnswerResponse struct {
-		Caller string `json:"caller"`
-		Nickename string `json:"nickname"`
-		Callid string `json:"callid"`
-		StartTime int `json:"starttime"`
+	Caller string `json:"caller"`
+	Nickename string `json:"nickname"`
+	Callid string `json:"callid"`
+	StartTime int `json:"starttime"`
 }

@@ -6,6 +6,7 @@ import (
 	"api/utils"
 	"encoding/json"
 	"log"
+	"sort"
 	"strconv"
 	"time"
 
@@ -442,6 +443,8 @@ func history(c *gin.Context) {
 
 		histories = append(histories, historyItem)
 	}
+
+	sort.SliceStable(histories, func(i, j int) bool { return histories[i].Calltime > histories[j].Calltime })
 
 	c.JSON(200, gin.H{
 		"histories": histories,

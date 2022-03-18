@@ -261,7 +261,9 @@ func contact(c *gin.Context) {
         contact.Nickname = *v["nickname"].S
         contact.Company = *v["company"].S
         contact.Department = *v["department"].S
-        contacts = append(contacts, contact)
+        if (contact.Username != username) {
+            contacts = append(contacts, contact)
+        }
     }
     
     c.JSON(200, gin.H{
