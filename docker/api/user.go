@@ -44,11 +44,11 @@ func create(c *gin.Context) {
         log.Fatalf("Got error creating user: %s", err)
     }
 
-    nawPass := utils.MakeRandomStr(10) + "&&1"
+    newPass := utils.MakeRandomStr(10) + "&&1"
     userName := newUserData.Username
 
     newPassword := &cognitoidentityprovider.AdminSetUserPasswordInput{
-        Password: aws.String(nawPass),
+        Password: aws.String(newPass),
         Permanent: aws.Bool(true),
         UserPoolId: aws.String("ap-northeast-1_Kjb4vUZPh"),
         Username: aws.String(*userName),
@@ -61,12 +61,12 @@ func create(c *gin.Context) {
 
     c.JSON(200, gin.H{
         "user": email,
-        "pass": nawPass,
+        "pass": newPass,
     })
 
     User = models.User{
         Username: *userName,
-        Secret: "?",
+        Secret: newPass,
         Orgid: 0,
         Nickname: "testNickname",
         Kana: "Kana",

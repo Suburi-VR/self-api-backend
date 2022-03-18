@@ -17,14 +17,31 @@ import (
 
 func start(c *gin.Context) {
 
-	username := userName(c)
+	var body map[string]string
+	c.BindJSON(&body)
 
-	call := models.Call{
-		CallID: utils.CallId(),
-		Password: utils.Password(),
-		Supporter: username,
-		Customer: "customer",
-		Status: 0,
+	var supporter string
+	var customer string
+	call := models.Call{}
+	if (body["calledpartyid"] != "") {
+		supporter = body["calledpartyid"]
+		customer = userName(c)
+		call = models.Call{
+			CallID: utils.CallId(),
+			Password: utils.Password(),
+			Supporter: supporter,
+			Customer: customer,
+			Status: 1,
+		}
+	} else {
+		supporter = userName(c)
+		call = models.Call{
+			CallID: utils.CallId(),
+			Password: utils.Password(),
+			Supporter: supporter,
+			Customer: "customer",
+			Status: 0,
+		}
 	}
 
 	/// CallTableにアイテム追加
@@ -117,7 +134,7 @@ func answer(c *gin.Context) {
 					S: aws.String(username),
 				},
 				":calltime": {
-					N: aws.String(strconv.FormatInt(time.Now().Unix(), 10)),
+					N: aws.String(strconv.FormatInt(time.Now().UnixNano() / 1000000, 10)),
 				},
 			},
 			ReturnValues: aws.String("ALL_NEW"),
@@ -163,7 +180,7 @@ func get(c *gin.Context) {
 
 	calls := callItems.Items
 	var res models.AnswerResponse
-	var resList []models.AnswerResponse
+	resList := []models.AnswerResponse{}
 	for _, v := range calls {
 		if (*v["status"].N == *aws.String("1")) {
 			/// UserTableを、customer取得したで検索してnicknameを取得する必要あり。
@@ -221,6 +238,25 @@ func end(c *gin.Context) {
 
 	callid := body["callid"]
 
+	getCallItemInput := &dynamodb.GetItemInput{
+		TableName: aws.String(config.CallTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			"callid": {
+				S: &callid,
+			},
+		},
+	}
+
+	callItem, err := config.Db.GetItem(getCallItemInput)
+	if err != nil {
+		log.Fatalf("Got error calling GetItem status1(call.go): %s", err)
+		return
+	}
+
+	calltime, _ := strconv.Atoi(*callItem.Item["calltime"].N)
+
+	duration := int(time.Now().UnixNano() / 1000000) - calltime
+
 	input := &dynamodb.UpdateItemInput {
 		TableName: aws.String(config.CallTable),
 		Key: map[string]*dynamodb.AttributeValue{
@@ -228,21 +264,25 @@ func end(c *gin.Context) {
 						S: &callid,
 				},
 		},
-		UpdateExpression: aws.String("set #status = :status"),
+		UpdateExpression: aws.String("set #status = :status, #duration = :duration"),
 		ExpressionAttributeNames: map[string]*string {
 				"#status": aws.String("status"),
+				"#duration": aws.String("duration"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue {
 				":status": {
-						N: aws.String("4"),
+					N: aws.String("4"),
 				},
+				":duration": {
+					N: aws.String(strconv.Itoa(duration)),
+			},
 		},
 		ReturnValues: aws.String("ALL_NEW"),
 		ReturnConsumedCapacity: aws.String("TOTAL"),
 		ReturnItemCollectionMetrics: aws.String("SIZE"),
 	}
 
-	_, err := config.Db.UpdateItem(input)
+	_, err = config.Db.UpdateItem(input)
 	if err != nil {
 			log.Fatalf("Got error calling UpdateItem: %s", err)
 	}
@@ -296,11 +336,12 @@ func history(c *gin.Context) {
 
 	callers := callerItems.Items
 
-	var histories []models.History
+	histories := []models.History{}
 	for _, v := range callers {
 		var historyItem models.History
 		historyItem.Callid = *v["callid"].S
 		historyItem.Calltime, _ = strconv.Atoi(*v["calltime"].N)
+		historyItem.Duration, _ = strconv.Atoi(*v["duration"].N)
 		historyItem.Caller = map[string]interface{}{}
 		historyItem.Caller["name"] = user.Username
 		historyItem.Caller["nickname"] = user.Nickname
@@ -364,6 +405,7 @@ func history(c *gin.Context) {
 		var historyItem models.History
 		historyItem.Callid = *v["callid"].S
 		historyItem.Calltime, _ = strconv.Atoi(*v["calltime"].N)
+		historyItem.Duration, _ = strconv.Atoi(*v["duration"].N)
 		historyItem.Receiver = map[string]interface{}{}
 		historyItem.Receiver["name"] = user.Username
 		historyItem.Receiver["nickname"] = user.Nickname
