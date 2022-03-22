@@ -35,6 +35,8 @@ func start(c *gin.Context) {
 			Supporter: supporter,
 			Customer: customer,
 			Status: 1,
+			Caller: customer,
+			Receiver: supporter,
 		}
 	} else {
 		supporter = userName(c)
@@ -44,6 +46,8 @@ func start(c *gin.Context) {
 			Supporter: supporter,
 			Customer: "customer",
 			Status: 0,
+			Caller: "caller",
+			Receiver: "receiver",
 		}
 	}
 
@@ -81,6 +85,23 @@ func answer(c *gin.Context) {
 	password := body["password"]
 	username := userName(c)
 
+	getCallItemInput := &dynamodb.GetItemInput{
+		TableName: aws.String(config.CallTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			"callid": {
+				S: &callid,
+			},
+		},
+	}
+
+	callItem, err := config.Db.GetItem(getCallItemInput)
+	if err != nil {
+		log.Fatalf("Got error calling GetItem status1(call.go): %s", err)
+		return
+	}
+
+	supporter := callItem.Item["supporter"].S
+
 	if (password != "") {
 		updateCallItemInput := &dynamodb.UpdateItemInput {
 			TableName: &config.CallTable,
@@ -89,11 +110,12 @@ func answer(c *gin.Context) {
 					S: &callid,
 				},
 			},
-			UpdateExpression: aws.String("set #customer = :customer, #status = :status, #caller = :caller"),
+			UpdateExpression: aws.String("set #customer = :customer, #status = :status, #caller = :caller, #receiver = :receiver"),
 			ExpressionAttributeNames: map[string]*string {
 				"#customer": aws.String("customer"),
 				"#status": aws.String("status"),
 				"#caller": aws.String("caller"),
+				"#receiver": aws.String("receiver"),
 			},
 			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue {
 				":customer": {
@@ -105,6 +127,10 @@ func answer(c *gin.Context) {
 				":caller": {
 					S: aws.String(username),
 				},
+				":receiver": {
+					S: aws.String(*supporter),
+				},
+
 			},
 			ReturnValues: aws.String("ALL_NEW"),
 			ReturnConsumedCapacity: aws.String("TOTAL"),
@@ -273,17 +299,21 @@ func end(c *gin.Context) {
 						S: &callid,
 				},
 		},
-		UpdateExpression: aws.String("set #status = :status, #duration = :duration"),
+		UpdateExpression: aws.String("set #status = :status, #duration = :duration, #calltime = :calltime"),
 		ExpressionAttributeNames: map[string]*string {
-				"#status": aws.String("status"),
-				"#duration": aws.String("duration"),
+			"#status": aws.String("status"),
+			"#duration": aws.String("duration"),
+			"#calltime": aws.String("calltime"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue {
-				":status": {
-					N: aws.String("4"),
-				},
-				":duration": {
-					N: aws.String(strconv.Itoa(duration)),
+			":status": {
+				N: aws.String("4"),
+			},
+			":duration": {
+				N: aws.String(strconv.Itoa(duration)),
+			},
+			":calltime": {
+				N: aws.String(strconv.Itoa(calltime)),
 			},
 		},
 		ReturnValues: aws.String("ALL_NEW"),
@@ -456,6 +486,7 @@ func history(c *gin.Context) {
 
 	lastkey = c.Query("lastkey")
 	var endIndex int
+	var response []models.History
 
 	if (lastkey == "") {
 		length := len(histories)
@@ -464,15 +495,20 @@ func history(c *gin.Context) {
 			return
 		case length < 10 && 0 < length:
 			endIndex = len(histories)
+			response = histories[:endIndex]
+			lastkey = response[len(response)-1].Callid
+			c.JSON(200, gin.H{
+				"histories": response,
+			})
 		case length >= 10:
 			endIndex = 10
+			response = histories[:endIndex]
+			lastkey = response[len(response)-1].Callid
+			c.JSON(200, gin.H{
+				"histories": response,
+				"lastkey": lastkey,
+			})
 		}
-		response := histories[:endIndex]
-		lastkey = response[len(response)-1].Callid
-		c.JSON(200, gin.H{
-			"histories": response,
-			"lastkey": lastkey,
-		})
 	} else if (lastkey == histories[len(histories)-1].Callid) {
 		return
 	} else {

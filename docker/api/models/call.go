@@ -7,6 +7,8 @@ type Call struct {
 	Supporter string `dynamodbav:"supporter"`
 	Customer string `dynamodbav:"customer"`
 	Status int `dynamodbav:"status"`
+	Caller string `dynamodbav:"caller"`
+	Receiver string `dynamodbav:"receiver"`
 }
 
 type AnswerResponse struct {
