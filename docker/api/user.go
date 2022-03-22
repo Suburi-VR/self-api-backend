@@ -19,6 +19,7 @@ import (
 	"api/utils"
 )
 
+// User Userモデル
 var User models.User
 
 func create(c *gin.Context) {
