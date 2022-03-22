@@ -16,6 +16,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var lastkey string
+var endkey string
+
 func start(c *gin.Context) {
 
 	var body map[string]string
@@ -254,9 +257,15 @@ func end(c *gin.Context) {
 		return
 	}
 
-	calltime, _ := strconv.Atoi(*callItem.Item["calltime"].N)
-
-	duration := int(time.Now().UnixNano() / 1000000) - calltime
+	var duration int
+	var calltime int
+	if (callItem.Item["calltime"] == nil) {
+		calltime = int(time.Now().UnixNano() / 1000000)
+		duration = 0
+	} else {
+		calltime, _ = strconv.Atoi(*callItem.Item["calltime"].N)
+		duration = int(time.Now().UnixNano() / 1000000) - calltime
+	}
 
 	input := &dynamodb.UpdateItemInput {
 		TableName: aws.String(config.CallTable),
@@ -446,7 +455,40 @@ func history(c *gin.Context) {
 
 	sort.SliceStable(histories, func(i, j int) bool { return histories[i].Calltime > histories[j].Calltime })
 
-	c.JSON(200, gin.H{
-		"histories": histories,
-	})
+	if (c.Query("lastkey") != "") {
+		lastkey = c.Query("lastkey")
+	}
+
+	if (lastkey == "" && endkey == "") {
+		response := histories[:10]
+		lastkey = response[len(response)-1].Callid
+		c.JSON(200, gin.H{
+			"histories": response,
+			"lastkey": lastkey,
+		})
+	} else {
+		var index int
+		for i, v := range histories {
+			if (v.Callid == lastkey) {
+				index = i
+			}
+		}
+
+		if (histories[index].Callid == lastkey && len(histories[index + 1:]) < 10) {
+			response := histories[index + 1:]
+			lastkey = ""
+			endkey = response[len(response)-1].Callid
+			c.JSON(200, gin.H{
+				"histories": response,
+				"lastkey": lastkey,
+			})
+		} else if (histories[index].Callid == lastkey && len(histories[index + 1:]) >= 10) {
+			response := histories[index + 1:index + 10]
+			lastkey = response[len(response)-1].Callid
+			c.JSON(200, gin.H{
+				"histories": response,
+				"lastkey": lastkey,
+			})
+		}
+	}
 }
