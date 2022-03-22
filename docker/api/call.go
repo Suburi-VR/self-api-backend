@@ -17,7 +17,6 @@ import (
 )
 
 var lastkey string
-var endkey string
 
 func start(c *gin.Context) {
 
@@ -455,17 +454,17 @@ func history(c *gin.Context) {
 
 	sort.SliceStable(histories, func(i, j int) bool { return histories[i].Calltime > histories[j].Calltime })
 
-	if (c.Query("lastkey") != "") {
-		lastkey = c.Query("lastkey")
-	}
+	lastkey = c.Query("lastkey")
 
-	if (lastkey == "" && endkey == "") {
+	if (lastkey == "") {
 		response := histories[:10]
 		lastkey = response[len(response)-1].Callid
 		c.JSON(200, gin.H{
 			"histories": response,
 			"lastkey": lastkey,
 		})
+	} else if (lastkey == histories[len(histories)-1].Callid) {
+		return
 	} else {
 		var index int
 		for i, v := range histories {
@@ -476,11 +475,9 @@ func history(c *gin.Context) {
 
 		if (histories[index].Callid == lastkey && len(histories[index + 1:]) < 10) {
 			response := histories[index + 1:]
-			lastkey = ""
-			endkey = response[len(response)-1].Callid
+			lastkey = response[len(response)-1].Callid
 			c.JSON(200, gin.H{
 				"histories": response,
-				"lastkey": lastkey,
 			})
 		} else if (histories[index].Callid == lastkey && len(histories[index + 1:]) >= 10) {
 			response := histories[index + 1:index + 10]
