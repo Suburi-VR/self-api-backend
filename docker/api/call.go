@@ -455,9 +455,19 @@ func history(c *gin.Context) {
 	sort.SliceStable(histories, func(i, j int) bool { return histories[i].Calltime > histories[j].Calltime })
 
 	lastkey = c.Query("lastkey")
+	var endIndex int
 
 	if (lastkey == "") {
-		response := histories[:10]
+		length := len(histories)
+		switch {
+		case length == 0:
+			return
+		case length < 10 && 0 < length:
+			endIndex = len(histories)
+		case length >= 10:
+			endIndex = 10
+		}
+		response := histories[:endIndex]
 		lastkey = response[len(response)-1].Callid
 		c.JSON(200, gin.H{
 			"histories": response,
