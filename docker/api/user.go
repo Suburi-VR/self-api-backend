@@ -73,6 +73,7 @@ func create(c *gin.Context) {
         Kana: "Kana",
         Company: "kaisha",
         Department: "busho",
+        Anonflg: true,
     }
 
         

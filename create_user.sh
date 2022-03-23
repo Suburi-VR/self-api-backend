@@ -20,7 +20,8 @@ echo "  \"orgid\": {\"N\": \"${USER_GIP}\"}," >> item.json
 echo "  \"nickname\": {\"S\": \"${USER_NAME}\"}," >> item.json
 echo "  \"kana\": {\"S\": \"${USER_KANA}\"}," >> item.json
 echo "  \"company\": {\"S\": \"${USER_COMPANY}\"}," >> item.json
-echo "  \"department\": {\"S\": \"${USER_DEPT}\"}" >> item.json
+echo "  \"department\": {\"S\": \"${USER_DEPT}\"}," >> item.json
+echo "  \"anonflg\": {\"BOOL\": false}" >> item.json
 echo '}' >> item.json
 
 aws cognito-idp admin-create-user --user-pool-id ${USER_POOL_ID} --username ${USER_EMAIL} --user-attributes Name="custom:supporter",Value="true"

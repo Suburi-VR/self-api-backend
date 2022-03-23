@@ -11,4 +11,5 @@ type User struct {
 	Platform string `dynamodbav:"platform"`
 	Company string `dynamodbav:"company"`
 	Department string `dynamodbav:"department"`
+	Anonflg bool `dynamodbav:"anonflg"`
 }

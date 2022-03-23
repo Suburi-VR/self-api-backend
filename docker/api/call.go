@@ -352,6 +352,7 @@ func history(c *gin.Context) {
 	user.Nickname = *item["nickname"].S
 	user.Company = *item["company"].S
 	user.Department = *item["department"].S
+	user.Anonflg = *item["anonflg"].BOOL
 
 	// caller
 	queryCallerItemInput := &dynamodb.QueryInput{
@@ -387,6 +388,7 @@ func history(c *gin.Context) {
 		historyItem.Caller["kana"] = user.Kana
 		historyItem.Caller["company"] = user.Company
 		historyItem.Caller["department"] = user.Department
+		historyItem.Caller["anonflg"] = user.Anonflg
 
 		getReceiverItemInput := &dynamodb.GetItemInput{
 			TableName: aws.String(config.UserTable),
@@ -407,6 +409,7 @@ func history(c *gin.Context) {
 		receiver.Nickname = *item["nickname"].S
 		receiver.Company = *item["company"].S
 		receiver.Department = *item["department"].S
+		receiver.Anonflg = *item["anonflg"].BOOL
 
 		historyItem.Receiver = map[string]interface{}{}
 		historyItem.Receiver["name"] = receiver.Username
@@ -414,6 +417,7 @@ func history(c *gin.Context) {
 		historyItem.Receiver["kana"] = receiver.Kana
 		historyItem.Receiver["company"] = receiver.Company
 		historyItem.Receiver["department"] = receiver.Department
+		historyItem.Receiver["anonflg"] = receiver.Anonflg
 
 		histories = append(histories, historyItem)
 	}
@@ -451,6 +455,7 @@ func history(c *gin.Context) {
 		historyItem.Receiver["kana"] = user.Kana
 		historyItem.Receiver["company"] = user.Company
 		historyItem.Receiver["department"] = user.Department
+		historyItem.Receiver["anonflg"] = user.Anonflg
 
 		getCallerItemInput := &dynamodb.GetItemInput{
 			TableName: aws.String(config.UserTable),
@@ -471,6 +476,7 @@ func history(c *gin.Context) {
 		caller.Nickname = *item["nickname"].S
 		caller.Company = *item["company"].S
 		caller.Department = *item["department"].S
+		caller.Anonflg = *item["anonflg"].BOOL
 
 		historyItem.Caller = map[string]interface{}{}
 		historyItem.Caller["name"] = caller.Username
@@ -478,6 +484,7 @@ func history(c *gin.Context) {
 		historyItem.Caller["kana"] = caller.Kana
 		historyItem.Caller["company"] = caller.Company
 		historyItem.Caller["department"] = caller.Department
+		historyItem.Caller["anonflg"] = caller.Anonflg
 
 		histories = append(histories, historyItem)
 	}
