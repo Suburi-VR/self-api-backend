@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/gin-gonic/gin"
+
+	"api/services"
 )
 
 var lastkey string
@@ -85,22 +87,9 @@ func answer(c *gin.Context) {
 	password := body["password"]
 	username := userName(c)
 
-	getCallItemInput := &dynamodb.GetItemInput{
-		TableName: aws.String(config.CallTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			"callid": {
-				S: &callid,
-			},
-		},
-	}
+	item := services.GetCallItem(callid)
 
-	callItem, err := config.Db.GetItem(getCallItemInput)
-	if err != nil {
-		log.Fatalf("Got error calling GetItem status1(call.go): %s", err)
-		return
-	}
-
-	supporter := callItem.Item["supporter"].S
+	supporter := item["supporter"].S
 
 	if (password != "") {
 		updateCallItemInput := &dynamodb.UpdateItemInput {
@@ -237,22 +226,9 @@ func status(c *gin.Context) {
 	callid := body["callid"]
 
 	/// 受け取ったcallidでCallTableを検索
-	getCallItemInput := &dynamodb.GetItemInput{
-		TableName: aws.String(config.CallTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			"callid": {
-				S: &callid,
-			},
-		},
-	}
+	item := services.GetCallItem(callid)
 
-	callItem, err := config.Db.GetItem(getCallItemInput)
-	if err != nil {
-		log.Fatalf("Got error calling GetItem status1(call.go): %s", err)
-		return
-	}
-
-	status := callItem.Item["status"].N
+	status := item["status"].N
 	response, _ := strconv.Atoi(*status)
 
 	c.JSON(200, gin.H{
@@ -266,29 +242,15 @@ func end(c *gin.Context) {
 	c.BindJSON(&body)
 
 	callid := body["callid"]
-
-	getCallItemInput := &dynamodb.GetItemInput{
-		TableName: aws.String(config.CallTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			"callid": {
-				S: &callid,
-			},
-		},
-	}
-
-	callItem, err := config.Db.GetItem(getCallItemInput)
-	if err != nil {
-		log.Fatalf("Got error calling GetItem status1(call.go): %s", err)
-		return
-	}
+	callItem := services.GetCallItem(callid)
 
 	var duration int
 	var calltime int
-	if (callItem.Item["calltime"] == nil) {
+	if (callItem["calltime"] == nil) {
 		calltime = int(time.Now().UnixNano() / 1000000)
 		duration = 0
 	} else {
-		calltime, _ = strconv.Atoi(*callItem.Item["calltime"].N)
+		calltime, _ = strconv.Atoi(*callItem["calltime"].N)
 		duration = int(time.Now().UnixNano() / 1000000) - calltime
 	}
 
@@ -321,7 +283,7 @@ func end(c *gin.Context) {
 		ReturnItemCollectionMetrics: aws.String("SIZE"),
 	}
 
-	_, err = config.Db.UpdateItem(input)
+	_, err := config.Db.UpdateItem(input)
 	if err != nil {
 			log.Fatalf("Got error calling UpdateItem: %s", err)
 	}
@@ -330,22 +292,7 @@ func end(c *gin.Context) {
 func history(c *gin.Context) {
 	username := userName(c)
 
-	getUserItemInput := &dynamodb.GetItemInput{
-		TableName: aws.String(config.UserTable),
-		Key: map[string]*dynamodb.AttributeValue{
-			"username": {
-				S: &username,
-			},
-		},
-	}
-
-	userItem, err := config.Db.GetItem(getUserItemInput)
-	if err != nil {
-		log.Fatalf("Got error calling GetItem history: %s", err)
-		return
-	}
-
-	item := userItem.Item
+	item := services.GetUserItem(username)
 
 	var user models.User
 	user.Username = *item["username"].S
@@ -390,23 +337,11 @@ func history(c *gin.Context) {
 		historyItem.Caller["department"] = user.Department
 		historyItem.Caller["anonflg"] = user.Anonflg
 
-		getReceiverItemInput := &dynamodb.GetItemInput{
-			TableName: aws.String(config.UserTable),
-			Key: map[string]*dynamodb.AttributeValue{
-				"username": {
-					S: v["receiver"].S,
-				},
-			},
-		}
-		receiverItem, err := config.Db.GetItem(getReceiverItemInput)
-		if err != nil {
-			log.Fatalf("Got error calling GetItem history: %s", err)
-			return
-		}
-		item := receiverItem.Item
+		item := services.GetUserItem(*v["receiver"].S)
 		var receiver models.User
 		receiver.Username = *item["username"].S
 		receiver.Nickname = *item["nickname"].S
+		receiver.Kana = *item["kana"].S
 		receiver.Company = *item["company"].S
 		receiver.Department = *item["department"].S
 		receiver.Anonflg = *item["anonflg"].BOOL
@@ -457,23 +392,11 @@ func history(c *gin.Context) {
 		historyItem.Receiver["department"] = user.Department
 		historyItem.Receiver["anonflg"] = user.Anonflg
 
-		getCallerItemInput := &dynamodb.GetItemInput{
-			TableName: aws.String(config.UserTable),
-			Key: map[string]*dynamodb.AttributeValue{
-				"username": {
-					S: v["caller"].S,
-				},
-			},
-		}
-		callerItem, err := config.Db.GetItem(getCallerItemInput)
-		if err != nil {
-			log.Fatalf("Got error calling GetItem history: %s", err)
-			return
-		}
-		item := callerItem.Item
+		item := services.GetUserItem(*v["caller"].S)
 		var caller models.User
 		caller.Username = *item["username"].S
 		caller.Nickname = *item["nickname"].S
+		caller.Kana = *item["kana"].S
 		caller.Company = *item["company"].S
 		caller.Department = *item["department"].S
 		caller.Anonflg = *item["anonflg"].BOOL

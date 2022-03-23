@@ -2,12 +2,10 @@ package services
 
 import (
 	"api/config"
-	"api/models"
 	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 // GetUserItem UserTableのGetItem
@@ -31,24 +29,24 @@ func GetUserItem(username string) (map[string]*dynamodb.AttributeValue) {
 	return userItem
 }
 
-// PutUserItem UserTableのPutItem
-func PutUserItem(user models.User) {
-	av, err := dynamodbattribute.MarshalMap(user)
-	if err != nil {
-		log.Fatalf("Got error marshalling map in PutUserItem: %s", err)
+// GetCallItem CallTableのGetItem
+func GetCallItem(callid string) (map[string]*dynamodb.AttributeValue) {
+	Input := &dynamodb.GetItemInput{
+		TableName: aws.String(config.CallTable),
+		Key: map[string]*dynamodb.AttributeValue{
+			"callid": {
+				S: &callid,
+			},
+		},
 	}
 
-	input := &dynamodb.PutItemInput{
-		Item: av,
-		TableName: aws.String(config.UserTable),
-	}
-	
-	_, err = config.Db.PutItem(input)
+	result, err := config.Db.GetItem(Input)
 	if err != nil {
-		log.Fatalf("Got error calling PutItem: %s", err)
+		log.Fatalf("Got error calling GetCallItem: %s", err)
 	}
 
-	return
+	callItem := result.Item
+
+	return callItem
 }
 
-// GetCallItem CallTableのGetItem

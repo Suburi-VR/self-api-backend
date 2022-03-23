@@ -16,6 +16,7 @@ import (
 
 	"api/config"
 	"api/models"
+	"api/services"
 	"api/utils"
 )
 
@@ -36,7 +37,7 @@ func create(c *gin.Context) {
         },
     }
 		
-    newUserData.SetUserPoolId("ap-northeast-1_Kjb4vUZPh")
+    newUserData.SetUserPoolId(config.CognitoUserPoolId)
     newUserData.SetUsername(email)
     newUserData.SetTemporaryPassword(pass)
 
@@ -51,7 +52,7 @@ func create(c *gin.Context) {
     newPassword := &cognitoidentityprovider.AdminSetUserPasswordInput{
         Password: aws.String(newPass),
         Permanent: aws.Bool(true),
-        UserPoolId: aws.String("ap-northeast-1_Kjb4vUZPh"),
+        UserPoolId: aws.String(config.CognitoUserPoolId),
         Username: aws.String(*userName),
     }
 
@@ -83,7 +84,7 @@ func create(c *gin.Context) {
         log.Fatalf("Got error marshalling map: %s", dbErr)
     }
 
-    input := &dynamodb.PutItemInput{
+    input := &dynamodb.PutItemInput {
         Item:      av,
         TableName: aws.String(config.UserTable),
     }
@@ -119,24 +120,7 @@ func getInfo(c *gin.Context) {
 
     username := userName(c)
 
-
-    input := &dynamodb.GetItemInput{
-        TableName: aws.String(config.UserTable),
-        Key: map[string]*dynamodb.AttributeValue{
-            "username": {
-                S: &username,
-            },
-        },
-    }
-
-    result, err := config.Db.GetItem(input)
-    if err != nil {
-        log.Fatalf("Got error calling GetItem: %s", err)
-        return
-    }
-
-    
-    user := result.Item
+    user := services.GetUserItem(username)
 
     User.Username = *user["username"].S
     User.Orgid, _ = strconv.Atoi(*user["orgid"].N)
@@ -217,22 +201,7 @@ func updateInfo(c *gin.Context) {
 func contact(c *gin.Context) {
     username := userName(c)
 
-    input := &dynamodb.GetItemInput{
-        TableName: aws.String(config.UserTable),
-        Key: map[string]*dynamodb.AttributeValue{
-            "username": {
-                S: &username,
-            },
-        },
-    }
-
-    result, err := config.Db.GetItem(input)
-    if err != nil {
-        log.Fatalf("Got error calling GetItem in contact: %s", err)
-        return
-    }
-
-    user := result.Item
+    user := services.GetUserItem(username)
     orgid := user["orgid"]
 
     queryInput := &dynamodb.QueryInput{

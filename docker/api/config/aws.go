@@ -15,5 +15,6 @@ var Sess = session.Must(session.NewSessionWithOptions(session.Options{
 			CredentialsChainVerboseErrors: aws.Bool(true),
 		},
 	}))
-	var Db = dynamodb.New(Sess, &aws.Config{Endpoint: aws.String("http://192.168.1.8:8000")})
+var Db = dynamodb.New(Sess, &aws.Config{Endpoint: aws.String("http://192.168.1.8:8000")})
 var CognitoClient = cognitoidentityprovider.New(Sess)
+var CognitoUserPoolId = "ap-northeast-1_Kjb4vUZPh"
