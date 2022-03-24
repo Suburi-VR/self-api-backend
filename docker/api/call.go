@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/config"
+	"api/errors"
 	"api/models"
 	"api/utils"
 	"encoding/json"
@@ -23,7 +24,7 @@ var lastkey string
 func start(c *gin.Context) {
 
 	var body map[string]string
-	c.BindJSON(&body)
+	err := c.BindJSON(&body)
 
 	var supporter string
 	var customer string
@@ -80,7 +81,12 @@ func answer(c *gin.Context) {
 
 	/// callidとpassword受け取る
 	var body map[string]string
-	c.BindJSON(&body)
+	err := c.BindJSON(&body)
+
+	if (err != nil) {
+		errors.BadRequest(c)
+		return
+	}
 
 	callid := body["callid"]
 	password := body["password"]
@@ -88,9 +94,15 @@ func answer(c *gin.Context) {
 
 	item := services.GetCallItem(callid)
 
-	supporter := item["supporter"].S
+	if (item == nil) {
+		errors.InternalServerError(c)
+		return
+	}
 
-	if (password != "") {
+	supporter := item["supporter"].S
+	correctPassword := item["password"].S
+
+	if (password != "" && password == *correctPassword) {
 		updateCallItemInput := &dynamodb.UpdateItemInput {
 			TableName: &config.CallTable,
 			Key: map[string]*dynamodb.AttributeValue{
@@ -128,6 +140,10 @@ func answer(c *gin.Context) {
 		if _, err := config.Db.UpdateItem(updateCallItemInput); err != nil {
 			log.Fatalf("Got error calling PutItem in call.go(answer): %s", err)
 		}
+	} else if (password != "" && password != *correctPassword) {
+		// passwordが間違っている場合
+		errors.InternalServerError(c)
+		return
 	} else {
 		updateCallItemInput := &dynamodb.UpdateItemInput {
 			TableName: &config.CallTable,
@@ -218,7 +234,12 @@ func get(c *gin.Context) {
 
 func status(c *gin.Context) {
 	var body map[string]string
-	c.BindJSON(&body)
+	err := c.BindJSON(&body)
+
+	if (err != nil) {
+		errors.BadRequest(c)
+		return
+	}
 
 	callid := body["callid"]
 
@@ -236,7 +257,12 @@ func status(c *gin.Context) {
 func end(c *gin.Context) {
 	/// callidを受け取る
 	var body map[string]string
-	c.BindJSON(&body)
+	err := c.BindJSON(&body)
+
+	if (err != nil) {
+		errors.BadRequest(c)
+		return
+	}
 
 	callid := body["callid"]
 	callItem := services.GetCallItem(callid)

@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"api/config"
+	"api/errors"
 	"api/models"
 	"api/services"
 	"api/utils"
@@ -140,7 +141,12 @@ func getInfo(c *gin.Context) {
 func updateInfo(c *gin.Context) {
 
     var body map[string]string
-    c.BindJSON(&body)
+    err := c.BindJSON(&body)
+
+    if (err != nil) {
+		errors.BadRequest(c)
+		return
+	}
 
     User.Platform = body["platform"]
     User.DeviceToken = body["deviceToken"]
