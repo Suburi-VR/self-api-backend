@@ -64,8 +64,7 @@ func start(c *gin.Context) {
 		TableName: &config.CallTable,
 	}
 
-	_, err = config.Db.PutItem(input)
-	if err != nil {
+	if _, err := config.Db.PutItem(input); err != nil {
 		log.Fatalf("Got error calling PutItem in call.go(start1): %s", err)
 	}
 
@@ -126,8 +125,7 @@ func answer(c *gin.Context) {
 			ReturnItemCollectionMetrics: aws.String("SIZE"),
 		}
 	
-		_, err := config.Db.UpdateItem(updateCallItemInput)
-		if err != nil {
+		if _, err := config.Db.UpdateItem(updateCallItemInput); err != nil {
 			log.Fatalf("Got error calling PutItem in call.go(answer): %s", err)
 		}
 	} else {
@@ -160,8 +158,7 @@ func answer(c *gin.Context) {
 			ReturnItemCollectionMetrics: aws.String("SIZE"),
 		}
 	
-		_, err := config.Db.UpdateItem(updateCallItemInput)
-		if err != nil {
+		if _, err := config.Db.UpdateItem(updateCallItemInput); err != nil {
 			log.Fatalf("Got error calling PutItem in call.go(answer): %s", err)
 		}
 	}
@@ -283,9 +280,8 @@ func end(c *gin.Context) {
 		ReturnItemCollectionMetrics: aws.String("SIZE"),
 	}
 
-	_, err := config.Db.UpdateItem(input)
-	if err != nil {
-			log.Fatalf("Got error calling UpdateItem: %s", err)
+	if _, err := config.Db.UpdateItem(input); err != nil {
+		log.Fatalf("Got error calling UpdateItem: %s", err)
 	}
 }
 

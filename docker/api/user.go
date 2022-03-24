@@ -41,8 +41,7 @@ func create(c *gin.Context) {
     newUserData.SetUsername(email)
     newUserData.SetTemporaryPassword(pass)
 
-    _, err := config.CognitoClient.AdminCreateUser(newUserData)
-    if err != nil {
+    if _, err := config.CognitoClient.AdminCreateUser(newUserData); err != nil {
         log.Fatalf("Got error creating user: %s", err)
     }
 
@@ -56,9 +55,8 @@ func create(c *gin.Context) {
         Username: aws.String(*userName),
     }
 
-    _, e := config.CognitoClient.AdminSetUserPassword(newPassword)
-    if e != nil {
-        log.Fatalf("Got error create new password: %s", e)
+    if _, err := config.CognitoClient.AdminSetUserPassword(newPassword); err != nil {
+        log.Fatalf("Got error create new password: %s", err)
     }
 
     c.JSON(200, gin.H{
@@ -79,9 +77,9 @@ func create(c *gin.Context) {
 
         
 
-    av, dbErr := dynamodbattribute.MarshalMap(User)
-    if dbErr != nil {
-        log.Fatalf("Got error marshalling map: %s", dbErr)
+    av, err := dynamodbattribute.MarshalMap(User)
+    if err != nil {
+        log.Fatalf("Got error marshalling map: %s", err)
     }
 
     input := &dynamodb.PutItemInput {
@@ -89,8 +87,7 @@ func create(c *gin.Context) {
         TableName: aws.String(config.UserTable),
     }
     
-    _, err = config.Db.PutItem(input)
-    if err != nil {
+    if _, err := config.Db.PutItem(input); err != nil {
         log.Fatalf("Got error calling PutItem: %s", err)
     }
 
@@ -190,8 +187,7 @@ func updateInfo(c *gin.Context) {
         ReturnItemCollectionMetrics: aws.String("SIZE"),
     }
 
-    _, err := config.Db.UpdateItem(params)
-    if err != nil {
+    if _, err := config.Db.UpdateItem(params); err != nil {
         log.Fatalf("Got error calling UpdateItem: %s", err)
     }
 
