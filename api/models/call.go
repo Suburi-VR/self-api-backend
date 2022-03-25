@@ -11,6 +11,27 @@ type Call struct {
 	Receiver string `dynamodbav:"receiver"`
 }
 
+// Caller 発信者モデル
+type Caller struct {
+	Name string `json:"name"`
+	Nickname string `json:"nickname"`
+	Kana string `json:"kana"`
+	Company string `json:"company"`
+	Department string `json:"department"`
+	Anonflg bool `json:"anonflg"`
+}
+
+// Receiver 着信者モデル
+type Receiver struct {
+	Name string `json:"name"`
+	Nickname string `json:"nickname"`
+	Kana string `json:"kana"`
+	Company string `json:"company"`
+	Department string `json:"department"`
+	Anonflg bool `json:"anonflg"`
+}
+
+// AnswerResponse /call/answerしたときのresponse
 type AnswerResponse struct {
 	Caller string `json:"caller"`
 	Nickename string `json:"nickname"`

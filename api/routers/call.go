@@ -53,7 +53,7 @@ func start(c *gin.Context) {
 		}
 	}
 
-	/// CallTableにアイテム追加
+	// CallTableにアイテム追加
 	av, err := dynamodbattribute.MarshalMap(call)
 	if err != nil {
 		log.Fatalf("Got error marshalling map in start: %s", err)
@@ -82,7 +82,7 @@ func start(c *gin.Context) {
 
 func answer(c *gin.Context) {
 
-	/// callidとpassword受け取る
+	// callidとpassword受け取る
 	var body map[string]string
 	err := c.BindJSON(&body)
 
@@ -367,13 +367,12 @@ func history(c *gin.Context) {
 		historyItem.Callid = *v["callid"].S
 		historyItem.Calltime, _ = strconv.Atoi(*v["calltime"].N)
 		historyItem.Duration, _ = strconv.Atoi(*v["duration"].N)
-		historyItem.Caller = map[string]interface{}{}
-		historyItem.Caller["name"] = user.Username
-		historyItem.Caller["nickname"] = user.Nickname
-		historyItem.Caller["kana"] = user.Kana
-		historyItem.Caller["company"] = user.Company
-		historyItem.Caller["department"] = user.Department
-		historyItem.Caller["anonflg"] = user.Anonflg
+		historyItem.Caller.Name = user.Username
+		historyItem.Caller.Nickname = user.Nickname
+		historyItem.Caller.Kana = user.Kana
+		historyItem.Caller.Company = user.Company
+		historyItem.Caller.Department = user.Department
+		historyItem.Caller.Anonflg = user.Anonflg
 
 		item := services.GetUserItem(*v["receiver"].S)
 		var receiver models.User
@@ -384,13 +383,12 @@ func history(c *gin.Context) {
 		receiver.Department = *item["department"].S
 		receiver.Anonflg = *item["anonflg"].BOOL
 
-		historyItem.Receiver = map[string]interface{}{}
-		historyItem.Receiver["name"] = receiver.Username
-		historyItem.Receiver["nickname"] = receiver.Nickname
-		historyItem.Receiver["kana"] = receiver.Kana
-		historyItem.Receiver["company"] = receiver.Company
-		historyItem.Receiver["department"] = receiver.Department
-		historyItem.Receiver["anonflg"] = receiver.Anonflg
+		historyItem.Receiver.Name = receiver.Username
+		historyItem.Receiver.Nickname = receiver.Nickname
+		historyItem.Receiver.Kana = receiver.Kana
+		historyItem.Receiver.Company = receiver.Company
+		historyItem.Receiver.Department = receiver.Department
+		historyItem.Receiver.Anonflg = receiver.Anonflg
 
 		histories = append(histories, historyItem)
 	}
@@ -424,13 +422,12 @@ func history(c *gin.Context) {
 		historyItem.Callid = *v["callid"].S
 		historyItem.Calltime, _ = strconv.Atoi(*v["calltime"].N)
 		historyItem.Duration, _ = strconv.Atoi(*v["duration"].N)
-		historyItem.Receiver = map[string]interface{}{}
-		historyItem.Receiver["name"] = user.Username
-		historyItem.Receiver["nickname"] = user.Nickname
-		historyItem.Receiver["kana"] = user.Kana
-		historyItem.Receiver["company"] = user.Company
-		historyItem.Receiver["department"] = user.Department
-		historyItem.Receiver["anonflg"] = user.Anonflg
+		historyItem.Receiver.Name = user.Username
+		historyItem.Receiver.Nickname = user.Nickname
+		historyItem.Receiver.Kana = user.Kana
+		historyItem.Receiver.Company = user.Company
+		historyItem.Receiver.Department = user.Department
+		historyItem.Receiver.Anonflg = user.Anonflg
 
 		item := services.GetUserItem(*v["caller"].S)
 		var caller models.User
@@ -441,13 +438,12 @@ func history(c *gin.Context) {
 		caller.Department = *item["department"].S
 		caller.Anonflg = *item["anonflg"].BOOL
 
-		historyItem.Caller = map[string]interface{}{}
-		historyItem.Caller["name"] = caller.Username
-		historyItem.Caller["nickname"] = caller.Nickname
-		historyItem.Caller["kana"] = caller.Kana
-		historyItem.Caller["company"] = caller.Company
-		historyItem.Caller["department"] = caller.Department
-		historyItem.Caller["anonflg"] = caller.Anonflg
+		historyItem.Caller.Name = caller.Username
+		historyItem.Caller.Nickname = caller.Nickname
+		historyItem.Caller.Kana = caller.Kana
+		historyItem.Caller.Company = caller.Company
+		historyItem.Caller.Department = caller.Department
+		historyItem.Caller.Anonflg = caller.Anonflg
 
 		histories = append(histories, historyItem)
 	}
