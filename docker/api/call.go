@@ -58,6 +58,8 @@ func start(c *gin.Context) {
 	av, err := dynamodbattribute.MarshalMap(call)
 	if err != nil {
 		log.Fatalf("Got error marshalling map in start: %s", err)
+		errors.InternalServerError(c)
+		return
 	}
 
 	input := &dynamodb.PutItemInput {
@@ -67,6 +69,8 @@ func start(c *gin.Context) {
 
 	if _, err := config.Db.PutItem(input); err != nil {
 		log.Fatalf("Got error calling PutItem in call.go(start1): %s", err)
+		errors.InternalServerError(c)
+		return
 	}
 
 	c.JSON(200, gin.H{
@@ -139,6 +143,8 @@ func answer(c *gin.Context) {
 	
 		if _, err := config.Db.UpdateItem(updateCallItemInput); err != nil {
 			log.Fatalf("Got error calling PutItem in call.go(answer): %s", err)
+			errors.InternalServerError(c)
+			return
 		}
 	} else if (password != "" && password != *correctPassword) {
 		// passwordが間違っている場合
@@ -176,6 +182,8 @@ func answer(c *gin.Context) {
 	
 		if _, err := config.Db.UpdateItem(updateCallItemInput); err != nil {
 			log.Fatalf("Got error calling PutItem in call.go(answer): %s", err)
+			errors.InternalServerError(c)
+			return
 		}
 	}
 
@@ -207,6 +215,8 @@ func get(c *gin.Context) {
 	callItems, err := config.Db.Query(queryCallItemInput)
 	if err != nil {
 		log.Fatalf("Got error calling GetItem in get(call.go): %s", err)
+		errors.InternalServerError(c)
+		return
 	}
 
 	calls := callItems.Items
@@ -214,7 +224,7 @@ func get(c *gin.Context) {
 	resList := []models.AnswerResponse{}
 	for _, v := range calls {
 		if (*v["status"].N == *aws.String("1")) {
-			/// UserTableを、customer取得したで検索してnicknameを取得する必要あり。
+			/// UserTableを、取得したcustomerで検索してnicknameを取得する必要あり。
 			res.Caller = *v["customer"].S
 			res.Nickename = ""
 			res.Callid = *v["callid"].S
@@ -223,7 +233,10 @@ func get(c *gin.Context) {
 		}
 	}
 
-	_, err = json.Marshal(resList)
+	if _, err = json.Marshal(resList); err != nil {
+		errors.InternalServerError(c)
+		return
+	}
 
 	c.JSON(200, gin.H{
 		"calls": resList,
@@ -308,6 +321,8 @@ func end(c *gin.Context) {
 
 	if _, err := config.Db.UpdateItem(input); err != nil {
 		log.Fatalf("Got error calling UpdateItem: %s", err)
+		errors.InternalServerError(c)
+		return
 	}
 }
 
@@ -341,6 +356,8 @@ func history(c *gin.Context) {
 	callerItems, err := config.Db.Query(queryCallerItemInput)
 	if err != nil {
 		log.Fatalf("Got error calling GetItem in QueryInput(caller): %s", err)
+		errors.InternalServerError(c)
+		return
 	}
 
 	callers := callerItems.Items
@@ -397,6 +414,8 @@ func history(c *gin.Context) {
 	receiverItems, err := config.Db.Query(queryReceiverItemInput)
 	if err != nil {
 		log.Fatalf("Got error calling GetItem in QueryInput(caller): %s", err)
+		errors.InternalServerError(c)
+		return
 	}
 
 	receivers := receiverItems.Items

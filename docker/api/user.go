@@ -44,6 +44,8 @@ func create(c *gin.Context) {
 
     if _, err := config.CognitoClient.AdminCreateUser(newUserData); err != nil {
         log.Fatalf("Got error creating user: %s", err)
+        errors.InternalServerError(c)
+        return
     }
 
     newPass := utils.MakeRandomStr(10) + "&&1"
@@ -58,12 +60,9 @@ func create(c *gin.Context) {
 
     if _, err := config.CognitoClient.AdminSetUserPassword(newPassword); err != nil {
         log.Fatalf("Got error create new password: %s", err)
+        errors.InternalServerError(c)
+        return
     }
-
-    c.JSON(200, gin.H{
-        "user": email,
-        "pass": newPass,
-    })
 
     User = models.User{
         Username: *userName,
@@ -76,11 +75,11 @@ func create(c *gin.Context) {
         Anonflg: true,
     }
 
-        
-
     av, err := dynamodbattribute.MarshalMap(User)
     if err != nil {
         log.Fatalf("Got error marshalling map: %s", err)
+        errors.InternalServerError(c)
+        return
     }
 
     input := &dynamodb.PutItemInput {
@@ -90,7 +89,14 @@ func create(c *gin.Context) {
     
     if _, err := config.Db.PutItem(input); err != nil {
         log.Fatalf("Got error calling PutItem: %s", err)
+        errors.InternalServerError(c)
+        return
     }
+
+    c.JSON(200, gin.H{
+        "user": email,
+        "pass": newPass,
+    })
 
     return
 }
@@ -105,6 +111,8 @@ func userName(c *gin.Context) string {
 
     if err != nil {
         log.Fatalf("Got error calling PutItem: %s", err)
+        errors.Unauthorized(c)
+        return ""
     }
 
     var mapData map[string]string
@@ -117,8 +125,12 @@ func userName(c *gin.Context) string {
 func getInfo(c *gin.Context) {
 
     username := userName(c)
-
     user := services.GetUserItem(username)
+
+    if (user == nil) {
+        errors.InternalServerError(c)
+        return
+    }
 
     User.Username = *user["username"].S
     User.Orgid, _ = strconv.Atoi(*user["orgid"].N)
@@ -195,6 +207,8 @@ func updateInfo(c *gin.Context) {
 
     if _, err := config.Db.UpdateItem(params); err != nil {
         log.Fatalf("Got error calling UpdateItem: %s", err)
+        errors.InternalServerError(c)
+        return
     }
 
     return
@@ -202,8 +216,13 @@ func updateInfo(c *gin.Context) {
 
 func contact(c *gin.Context) {
     username := userName(c)
-
     user := services.GetUserItem(username)
+
+    if (user == nil) {
+        errors.InternalServerError(c)
+        return
+    }
+
     orgid := user["orgid"]
 
     queryInput := &dynamodb.QueryInput{
@@ -222,7 +241,9 @@ func contact(c *gin.Context) {
 
 	items, err := config.Db.Query(queryInput)
 	if err != nil {
-		log.Fatalf("Got error calling Query in contact: %s", err)
+        log.Fatalf("Got error calling Query in contact: %s", err)
+        errors.InternalServerError(c)
+        return
 	}
 
     contactsItems := items.Items

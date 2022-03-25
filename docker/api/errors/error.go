@@ -21,3 +21,11 @@ func InternalServerError(c *gin.Context) {
 	})
 	c.Abort()
 }
+
+func Unauthorized(c *gin.Context) {
+	c.JSON(c.Writer.Status(), gin.H{
+		"status": http.StatusUnauthorized,
+		"message": "Unauthorized",
+	})
+	c.Abort()
+}
