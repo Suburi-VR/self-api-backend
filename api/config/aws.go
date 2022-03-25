@@ -7,14 +7,25 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-var UserTable = "UserTable"
-var CallTable = "CallTable"
+// Sess aws session
 var Sess = session.Must(session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region: aws.String("ap-northeast-1"),
-			CredentialsChainVerboseErrors: aws.Bool(true),
-		},
-	}))
+	Config: aws.Config{
+		Region: aws.String("ap-northeast-1"),
+		CredentialsChainVerboseErrors: aws.Bool(true),
+	},
+}))
+
+// Db dynamodb
 var Db = dynamodb.New(Sess, &aws.Config{Endpoint: aws.String("http://192.168.1.8:8000")})
+
+// UserTable dynamodb UserTable
+var UserTable = "UserTable"
+
+// CallTable dynamodb CallTable
+var CallTable = "CallTable"
+
+// CognitoClient CognitoIdentityProvider
 var CognitoClient = cognitoidentityprovider.New(Sess)
-var CognitoUserPoolId = "ap-northeast-1_Kjb4vUZPh"
+
+// CognitoUserPoolID CognitoUserPoolID
+var CognitoUserPoolID = "ap-northeast-1_Kjb4vUZPh"

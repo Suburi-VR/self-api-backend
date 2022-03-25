@@ -1,4 +1,4 @@
-package main
+package routers
 
 import (
 	"encoding/base64"
@@ -38,7 +38,7 @@ func create(c *gin.Context) {
         },
     }
 		
-    newUserData.SetUserPoolId(config.CognitoUserPoolId)
+    newUserData.SetUserPoolId(config.CognitoUserPoolID)
     newUserData.SetUsername(email)
     newUserData.SetTemporaryPassword(pass)
 
@@ -54,7 +54,7 @@ func create(c *gin.Context) {
     newPassword := &cognitoidentityprovider.AdminSetUserPasswordInput{
         Password: aws.String(newPass),
         Permanent: aws.Bool(true),
-        UserPoolId: aws.String(config.CognitoUserPoolId),
+        UserPoolId: aws.String(config.CognitoUserPoolID),
         Username: aws.String(*userName),
     }
 
