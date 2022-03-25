@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"api/config"
-	"api/errors"
 	"api/models"
 	"api/services"
 	"api/utils"
@@ -44,7 +43,7 @@ func create(c *gin.Context) {
 
     if _, err := config.CognitoClient.AdminCreateUser(newUserData); err != nil {
         log.Fatalf("Got error creating user: %s", err)
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
     }
 
@@ -60,7 +59,7 @@ func create(c *gin.Context) {
 
     if _, err := config.CognitoClient.AdminSetUserPassword(newPassword); err != nil {
         log.Fatalf("Got error create new password: %s", err)
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
     }
 
@@ -78,7 +77,7 @@ func create(c *gin.Context) {
     av, err := dynamodbattribute.MarshalMap(User)
     if err != nil {
         log.Fatalf("Got error marshalling map: %s", err)
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
     }
 
@@ -89,7 +88,7 @@ func create(c *gin.Context) {
     
     if _, err := config.Db.PutItem(input); err != nil {
         log.Fatalf("Got error calling PutItem: %s", err)
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
     }
 
@@ -111,7 +110,7 @@ func userName(c *gin.Context) string {
 
     if err != nil {
         log.Fatalf("Got error calling PutItem: %s", err)
-        errors.Unauthorized(c)
+        utils.Unauthorized(c)
         return ""
     }
 
@@ -128,7 +127,7 @@ func getInfo(c *gin.Context) {
     user := services.GetUserItem(username)
 
     if (user == nil) {
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
     }
 
@@ -156,7 +155,7 @@ func updateInfo(c *gin.Context) {
     err := c.BindJSON(&body)
 
     if (err != nil) {
-		errors.BadRequest(c)
+		utils.BadRequest(c)
 		return
 	}
 
@@ -207,7 +206,7 @@ func updateInfo(c *gin.Context) {
 
     if _, err := config.Db.UpdateItem(params); err != nil {
         log.Fatalf("Got error calling UpdateItem: %s", err)
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
     }
 
@@ -219,7 +218,7 @@ func contact(c *gin.Context) {
     user := services.GetUserItem(username)
 
     if (user == nil) {
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
     }
 
@@ -242,7 +241,7 @@ func contact(c *gin.Context) {
 	items, err := config.Db.Query(queryInput)
 	if err != nil {
         log.Fatalf("Got error calling Query in contact: %s", err)
-        errors.InternalServerError(c)
+        utils.InternalServerError(c)
         return
 	}
 
